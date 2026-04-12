@@ -1,0 +1,17 @@
+type,value,steady_speed_ms,steady_accel_ms2
+throttle,0.2,1.251,-0.657
+throttle,0.25,1.354,-0.511
+throttle,0.3,1.487,-0.282
+throttle,0.35,1.624,-0.026
+throttle,0.4,1.765,0.232
+throttle,0.45,1.919,0.554
+throttle,0.5,2.109,0.974
+throttle,0.55,2.326,1.466
+throttle,0.6,2.567,2.024
+brake,0.1,2.14,-2.231
+brake,0.2,2.065,-2.307
+brake,0.3,2.031,-2.46
+brake,0.4,2.071,-2.683
+brake,0.5,2.131,-2.893
+brake,0.6,2.023,-3.053
+brake,0.7,2.121,-3.227

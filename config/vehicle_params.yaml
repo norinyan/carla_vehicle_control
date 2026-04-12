@@ -1,0 +1,17 @@
+# 车辆配置
+vehicles:
+  ego:
+    name: "ego_vehicle"
+    blueprint: "vehicle.lincoln.mkz_2020"
+    color: "255,255,255"
+
+# 路线配置
+route:
+  default: "A"
+  csv_dir: "config"
+
+# 场景配置
+scene:
+  map: "Town04"
+  weather: "ClearNoon"
+  fixed_delta_seconds: 0.1

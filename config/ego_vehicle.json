@@ -1,0 +1,53 @@
+{
+    "objects": [
+        {
+            "type": "vehicle.lincoln.mkz_2020",
+            "id": "ego_vehicle",
+            "spawn_point": {
+                "x": 105.29,
+                "y": 170.06,
+                "z": 0.6,
+                "roll": 0.0,
+                "pitch": 0.0,
+                "yaw": 0.333
+            },
+            "sensors": [
+                {
+                    "type": "sensor.other.gnss",
+                    "id": "gnss_ego",
+                    "spawn_point": {
+                        "x": 1.0,
+                        "y": 0.0,
+                        "z": 2.0
+                    },
+                    "noise_alt_stddev": 0.0,
+                    "noise_lat_stddev": 0.0,
+                    "noise_lon_stddev": 0.0
+                },
+                {
+                    "type": "sensor.other.imu",
+                    "id": "imu_ego",
+                    "spawn_point": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "roll": 0.0,
+                        "pitch": 0.0,
+                        "yaw": 0.0
+                    },
+                    "noise_accel_stddev_x": 0.0,
+                    "noise_accel_stddev_y": 0.0,
+                    "noise_accel_stddev_z": 0.0
+                },
+                {
+                    "type": "sensor.pseudo.odom",
+                    "id": "odometry_ego"
+                },
+                {
+                    "type": "sensor.pseudo.speedometer",
+                    "id": "speedometer_ego"
+                }
+            ]
+        }
+    ]
+}

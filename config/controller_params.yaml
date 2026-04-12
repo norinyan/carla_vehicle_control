@@ -1,0 +1,21 @@
+
+trajectory_tracker:
+  ctrl_period: 0.1
+
+
+# 横向pd控制器
+lat_pd:
+  kp: 0.65
+  kd: 0.10
+  k_yaw: 1.0
+
+# lon controller
+lon_pid:
+  kp: 0.95
+  ki: 0.05
+  kd: 0.00
+
+  a_limit: 1.5
+  i_limit: 1.0
+
+  
