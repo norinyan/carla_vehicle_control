@@ -1,5 +1,7 @@
 
 """
+controller_params.yaml中选择控制器。
+
 终端1：
 carla
 
@@ -12,8 +14,6 @@ launch_scene route:=C
 ros2 run carla_vehicle_control trajectory_tracker --ros-args -p route:=A
 ros2 run carla_vehicle_control trajectory_tracker --ros-args -p route:=B
 ros2 run carla_vehicle_control trajectory_tracker --ros-args -p route:=C
-
-
 
 """
 import os
@@ -31,7 +31,17 @@ from nav_msgs.msg import Odometry
 
 from carla_vehicle_control.controllers.lat_pd import LatPD
 from carla_vehicle_control.controllers.lon_pid import LonPID
+from carla_vehicle_control.controllers.lat_pp import LatPP
+from carla_vehicle_control.controllers.lat_st import LatST
 
+LAT_MAP = {
+    "lat_pd": (LatPD,  "lat_pd"),
+    "lat_pp": (LatPP,  "lat_purepursuit"),
+    "lat_st": (LatST, "lat_stanley"),
+}
+LON_MAP = {
+    "lon_pid": (LonPID, "lon_pid"),
+}
 
 class TrajectoryTracker(Node):
     def __init__(self):
@@ -71,8 +81,17 @@ class TrajectoryTracker(Node):
         self.timer = self.create_timer(self.ctrl_period, self._on_timer)
 
         # build controller
-        self.lat_ctrl = LatPD(cfg["lat_pd"])
-        self.lon_ctrl = LonPID(cfg["lon_pid"])
+        # self.lat_ctrl = LatPD(cfg["lat_pd"])
+        # self.lon_ctrl = LonPID(cfg["lon_pid"])
+        lat_name = cfg["trajectory_tracker"].get("lat_ctrl", "lat_pd")
+        lon_name = cfg["trajectory_tracker"].get("lon_ctrl", "lon_pid")
+
+        lat_cls, lat_key = LAT_MAP[lat_name]
+        lon_cls, lon_key = LON_MAP[lon_name]
+
+        self.lat_ctrl = lat_cls(cfg[lat_key])
+        self.lon_ctrl = lon_cls(cfg[lon_key])
+
 
         # states 
         self.now_state = {
@@ -85,7 +104,8 @@ class TrajectoryTracker(Node):
         # reference
         self.ref_traj = []
         self.idx_ref = 0
-
+        self.ref_points_num = cfg["trajectory_tracker"].get("ref_points_num", 30)
+        
         # 
         self.declare_parameter("route", "A")
         self.route = str(self.get_parameter("route").value).upper()
@@ -157,15 +177,15 @@ class TrajectoryTracker(Node):
             return
 
 
-        ref_point = self._find_ref_point()
-        steer_out = self.lat_ctrl.compute(self.now_state, ref_point, self.ctrl_period)
-        accel_out = self.lon_ctrl.compute(self.now_state, ref_point, self.ctrl_period)
-
+        ref_points = self._find_ref_points()
+        steer_out = self.lat_ctrl.compute(self.now_state, ref_points, self.ctrl_period)
+        accel_out = self.lon_ctrl.compute(self.now_state, ref_points, self.ctrl_period)
         ctrl_cmd = self._map2cmd(accel_out, steer_out)
 
         dist_to_goal = self._dist_to_goal()
 
         ########################debug###########################################
+        ref_point = ref_points[0]
         v_ref = ref_point["speed"]
         speed_err = v_ref - self.now_state["speed"]
         # 真实加速度（由速度差分估计）
@@ -223,7 +243,7 @@ class TrajectoryTracker(Node):
                     "speed": float(row["speed"]),
                 })
 
-    def _find_ref_point(self):
+    def _find_ref_points(self):
         search_window = 30
         start = self.idx_ref
         end = min(self.idx_ref + search_window, len(self.ref_traj))
@@ -240,11 +260,11 @@ class TrajectoryTracker(Node):
                 nearest_idx = i
 
         self.idx_ref = nearest_idx
-        lookahead_pts = 8
-        ref_idx = min(nearest_idx + lookahead_pts, len(self.ref_traj) - 1)
 
-        return self.ref_traj[ref_idx]
-
+        end_idx = min(nearest_idx + self.ref_points_num, len(self.ref_traj))
+        
+        return self.ref_traj[nearest_idx:end_idx]
+    
     def _load_calibration_table(self):
         pkg_share = get_package_share_directory("carla_vehicle_control")
         csv_path = os.path.join(pkg_share, "config", "calibration_table.csv")

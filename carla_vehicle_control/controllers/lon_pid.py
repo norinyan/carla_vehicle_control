@@ -16,9 +16,10 @@ class LonPID(LongitudinalController):
         self.integral = 0.0
         self.prev_error = 0.0
 
-    def compute(self, vehicle_state, ref_point, dt):
+    def compute(self, vehicle_state, ref_points, dt):
         
         v = vehicle_state["speed"]
+        ref_point = ref_points[0]
         v_ref = ref_point["speed"]
         
         dt = max(dt, 1e-3)

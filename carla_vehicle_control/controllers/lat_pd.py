@@ -3,7 +3,7 @@ from .base_controller import LateralController
 
 class LatPD(LateralController):
 
-    def __init__(self, params: dict):
+    def __init__(self, params):
 
         self.kp = params.get("kp", 0.6)
         self.kd = params.get("kd", 0.08)
@@ -14,7 +14,9 @@ class LatPD(LateralController):
         # D项需要上次的误差
         self.prev_error = 0.0
 
-    def compute(self, vehicle_state, ref_point, dt):
+        self.lookahead_pts = params.get("lookahead_pts", 8)
+
+    def compute(self, vehicle_state, ref_points, dt):
 
         # 当前状态
         x = vehicle_state["x"]
@@ -22,6 +24,9 @@ class LatPD(LateralController):
         yaw = vehicle_state["yaw"]
 
         # 参考状态
+        idx = min(self.lookahead_pts, len(ref_points) - 1)
+        ref_point = ref_points[idx]
+        
         x_ref = ref_point["x"]
         y_ref = ref_point["y"]
         yaw_ref = ref_point["yaw"]

@@ -1,6 +1,16 @@
 
 trajectory_tracker:
   ctrl_period: 0.1
+  ref_points_num: 20 
+
+  # 横向控制器选择
+  #lat_ctrl: "lat_pd"     
+  # lat_ctrl: "lat_pp"   
+  lat_ctrl: "lat_st"
+
+  # 纵向控制器选择
+  lon_ctrl: "lon_pid"
+
 
 
 # 横向pd控制器
@@ -8,6 +18,23 @@ lat_pd:
   kp: 0.65
   kd: 0.10
   k_yaw: 1.0
+  lookahead_pts: 8 
+
+# 横向 Pure Pursuit 控制器
+lat_purepursuit:
+  k_ld: 0.15
+  ld_min: 4.0
+  ld_max: 15.0
+  wheelbase: 2.85
+  max_steer_deg: 35.0
+  steer_limit: 1.0
+
+lat_stanley:
+  k: 0.5            # 横向误差增益，主要调节参数
+  ks: 0.1           # 速度软化，防低速除零
+  wheelbase: 2.85
+  max_steer_deg: 35.0
+  steer_limit: 1.0
 
 # lon controller
 lon_pid:
