@@ -16,6 +16,7 @@ ros2 run carla_vehicle_control trajectory_tracker --ros-args -p route:=B
 ros2 run carla_vehicle_control trajectory_tracker --ros-args -p route:=C
 
 """
+import carla
 import os
 import csv
 import yaml
@@ -28,6 +29,7 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from carla_msgs.msg import CarlaEgoVehicleControl
 from nav_msgs.msg import Odometry
+from std_msgs.msg import Float32MultiArray
 
 from carla_vehicle_control.controllers.lat_pd import LatPD
 from carla_vehicle_control.controllers.lon_pid import LonPID
@@ -47,6 +49,12 @@ class TrajectoryTracker(Node):
     def __init__(self):
         super().__init__("trajectory_tracker")
         
+        # Carla spectator 俯视跟随
+        self.carla_client = carla.Client('localhost', 2000)
+        self.carla_client.set_timeout(5.0)
+        self.carla_world = self.carla_client.get_world()
+        self.spectator = self.carla_world.get_spectator()
+
         # load config yaml 
         pkg_share = get_package_share_directory("carla_vehicle_control")
         params_path = os.path.join(pkg_share, "config", "controller_params.yaml")
@@ -74,6 +82,13 @@ class TrajectoryTracker(Node):
             "/carla/ego_vehicle/odometry_ego", 
             self._on_odom, 
             sensor_qos
+        )
+
+        # 可视化
+        self.pub_viz = self.create_publisher(
+            Float32MultiArray,
+            "/carla_viz/control_state",
+            10
         )
 
         # timer
@@ -201,7 +216,30 @@ class TrajectoryTracker(Node):
             f"br={ctrl_cmd['brake']:.2f}, st={ctrl_cmd['steer']:.2f}",
             throttle_duration_sec=1.0
         )
+
+        viz_msg = Float32MultiArray()
+        viz_msg.data = [
+            float(self.now_state["speed"]),   # 当前速度
+            float(v_ref),                      # 参考速度
+            float(self.now_state["yaw"]),      # 当前yaw
+            float(ref_points[0]["yaw"]),       # 参考yaw
+            float(steer_out),                  # 横向控制输出
+            float(accel_out),                  # 纵向控制输出
+            float(self.now_state["x"]),        # 当前x（给小地图用）
+            float(self.now_state["y"]),        # 当前y（给小地图用）
+        ]
+        self.pub_viz.publish(viz_msg)
+        
         self._pub_cmd(ctrl_cmd)
+        self._update_spectator()  # 加这一行
+
+    def _update_spectator(self):
+        x =  self.now_state["x"]
+        y = -self.now_state["y"]  # ROS bridge y取反 → Carla原生坐标
+        self.spectator.set_transform(carla.Transform(
+            carla.Location(x=x, y=y, z=50),
+            carla.Rotation(pitch=-90, yaw=0, roll=0)
+        ))
 
     def _on_odom(self, msg):
 

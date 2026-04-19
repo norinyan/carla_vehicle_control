@@ -6,7 +6,6 @@ from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
-
 def generate_launch_description():
     pkg_share = get_package_share_directory('carla_vehicle_control')
     default_params = os.path.join(pkg_share, 'config', 'vehicle_params.yaml')
@@ -21,8 +20,8 @@ def generate_launch_description():
 
     control_node = Node(
         package='carla_vehicle_control',
-        executable='vehicle_control_node',
-        name='vehicle_control_node',
+        executable='trajectory_tracker',
+        name='trajectory_tracker',
         output='screen',
         parameters=[{
             'role_name': LaunchConfiguration('role_name'),
@@ -34,6 +33,14 @@ def generate_launch_description():
         }]
     )
 
+    visualizer_node = Node(
+        package='carla_vehicle_control',
+        executable='visualizer',
+        name='visualizer',
+        output='screen',
+        arguments=[f'route:=A'],   # 这里先写死，后面改成读参数
+    )
+
     return LaunchDescription([
         role_arg,
         route_arg,
@@ -42,4 +49,5 @@ def generate_launch_description():
         hz_arg,
         save_arg,
         control_node,
+        visualizer_node,
     ])

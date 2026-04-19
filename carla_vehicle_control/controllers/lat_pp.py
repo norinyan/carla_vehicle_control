@@ -39,14 +39,14 @@ class LatPP(LateralController):
         alpha = atan2(dy, dx) - yaw 
         alpha = atan2(sin(alpha), cos(alpha))   # 归一化[-pi, pi]
 
+
+        # 4.计算u = delta = arctan(2L·sin(alpha) / ld) 
+        actual_ld = max(sqrt(dx**2 + dy**2), 1e-3)
+        steer_rad = atan2(2.0 * self.wheelbase * sin(alpha), actual_ld)
         # 临时debug
         print(f"ld={ld:.2f}, tx={tx:.2f}, ty={ty:.2f}, alpha={alpha:.3f}, steer_rad={steer_rad:.3f}")
 
         
-        # 4.计算u = delta = arctan(2L·sin(alpha) / ld) 
-        actual_ld = max(sqrt(dx**2 + dy**2), 1e-3)
-        steer_rad = atan2(2.0 * self.wheelbase * sin(alpha), actual_ld)
-
         steer = steer_rad / self.max_steer_rad
         steer = max(-self.steer_limit, min(self.steer_limit, steer))
 

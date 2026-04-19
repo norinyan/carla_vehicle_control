@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'trajectory_tracker = carla_vehicle_control.trajectory_tracker:main',
+            'visualizer = carla_vehicle_control.visualizer:main',
         ],
     },
 )
