@@ -15,6 +15,9 @@ ros2 run carla_vehicle_control trajectory_tracker --ros-args -p route:=A
 ros2 run carla_vehicle_control trajectory_tracker --ros-args -p route:=B
 ros2 run carla_vehicle_control trajectory_tracker --ros-args -p route:=C
 
+终端4：
+ros2 run carla_vehicle_control visualizer
+
 """
 import carla
 import os
@@ -229,7 +232,7 @@ class TrajectoryTracker(Node):
             float(self.now_state["y"]),        # 当前y（给小地图用）
         ]
         self.pub_viz.publish(viz_msg)
-        
+
         self._pub_cmd(ctrl_cmd)
         self._update_spectator()  # 加这一行
 
