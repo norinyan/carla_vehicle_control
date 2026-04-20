@@ -1,7 +1,10 @@
 
 """
+
 controller_params.yaml中选择控制器。
 
+ubuntu里录制视频：ctrl+shift+alt+R , 下面的命令是调整默认录制市场10分钟
+gsettings set org.gnome.settings-daemon.plugins.media-keys max-screencast-length 600
 终端1：
 carla
 
@@ -16,8 +19,10 @@ ros2 run carla_vehicle_control trajectory_tracker --ros-args -p route:=B
 ros2 run carla_vehicle_control trajectory_tracker --ros-args -p route:=C
 
 终端4：
-ros2 run carla_vehicle_control visualizer
+ros2 run carla_vehicle_control visualizer route:=C
 
+终端5：启动控制
+ros2 topic pub --once /carla_viz/start std_msgs/Bool "data: true"
 """
 import carla
 import os
@@ -33,7 +38,7 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from carla_msgs.msg import CarlaEgoVehicleControl
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Float32MultiArray
-
+from std_msgs.msg import Bool
 from carla_vehicle_control.controllers.lat_pd import LatPD
 from carla_vehicle_control.controllers.lon_pid import LonPID
 from carla_vehicle_control.controllers.lat_pp import LatPP
@@ -87,6 +92,10 @@ class TrajectoryTracker(Node):
             sensor_qos
         )
 
+        self.sub_start = self.create_subscription(
+            Bool, "/carla_viz/start", self._on_start, 10
+        )
+
         # 可视化
         self.pub_viz = self.create_publisher(
             Float32MultiArray,
@@ -133,10 +142,11 @@ class TrajectoryTracker(Node):
 
         # FSM 状态机
         self.odom_ready = False
+        self.STATE_WAITING  = "WAITING"   # 加这行
         self.STATE_DRIVING = "DRIVING"
         self.STATE_STOPPING = "STOPPING"
         self.STATE_STOPPED = "STOPPED"
-        self.tracker_state = self.STATE_DRIVING
+        self.tracker_state = self.STATE_WAITING
         self.stop_distance = 2.0
         self.stop_speed = 0.2
         self.stop_brake_hold = 0.30       # 停稳保持刹车
@@ -147,6 +157,11 @@ class TrajectoryTracker(Node):
 
         self.get_logger().info(f"route={self.route}, points={len(self.ref_traj)}, dt={self.ctrl_period}")
     
+    def _on_start(self, msg):
+        if msg.data and self.tracker_state == self.STATE_WAITING:
+            self.tracker_state = self.STATE_DRIVING
+            self.get_logger().info("收到启动信号，车辆开始行驶！")
+    
     def _on_timer(self):
         # safety check
         if len(self.ref_traj) == 0:
@@ -156,6 +171,13 @@ class TrajectoryTracker(Node):
         if not self.odom_ready:
             self.get_logger().warn("waiting odom...", throttle_duration_sec=2.0)
             return
+        
+        # waiting 
+        if self.tracker_state == self.STATE_WAITING:
+            self._pub_cmd({"throttle": 0.0, "brake": 0.3, "steer": 0.0})
+            self.get_logger().info("等待启动信号...", throttle_duration_sec=3.0)
+            return
+
 
         if self.tracker_state == self.STATE_DRIVING:
             self.get_logger().info("now_state: DRIVING ", once=True)
