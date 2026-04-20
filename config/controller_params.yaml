@@ -3,10 +3,10 @@ trajectory_tracker:
   ctrl_period: 0.1
   ref_points_num: 20 
 
-  # 横向控制器选择
+  # 横向控制器选择 pd , pp , st
   #lat_ctrl: "lat_pd"     
   # lat_ctrl: "lat_pp"   
-  lat_ctrl: "lat_st"
+  lat_ctrl: "lat_pd"
 
   # 纵向控制器选择
   lon_ctrl: "lon_pid"
