@@ -3,10 +3,10 @@ trajectory_tracker:
   ctrl_period: 0.1
   ref_points_num: 20 
 
-  # 横向控制器选择 pd , pp , st
+  # 横向控制器选择 pd , pp , st, mpc
   #lat_ctrl: "lat_pd"     
   # lat_ctrl: "lat_pp"   
-  lat_ctrl: "lat_pd"
+  lat_ctrl: "lat_mpc"
 
   # 纵向控制器选择
   lon_ctrl: "lon_pid"
@@ -29,12 +29,27 @@ lat_purepursuit:
   max_steer_deg: 35.0
   steer_limit: 1.0
 
+# 横向 stanley 控制器
 lat_stanley:
   k: 0.5            # 横向误差增益，主要调节参数
   ks: 0.1           # 速度软化，防低速除零
   wheelbase: 2.85
   max_steer_deg: 35.0
   steer_limit: 1.0
+
+# 横向 MPC 控制器
+lat_mpc:
+  wheelbase: 2.85
+  max_steer_deg: 35.0
+  # 预测参数（dt 从 ctrl_period 读，不需要重复写）
+  N: 20
+  # 转角增量约束
+  ddelta_max_deg: 5.0
+  # 代价权重
+  q_ey: 4.0
+  q_eyaw: 0.9
+  R_delta: 0.5
+  R_ddelta: 2.0
 
 # lon controller
 lon_pid:
