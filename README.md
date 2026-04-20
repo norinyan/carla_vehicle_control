@@ -21,15 +21,15 @@
 
 ### Stanley + PID
 
-![Stanley + PID](docs/media/st-pid.gif)
+![Stanley + PID](docs/st-pid.gif)
 
 ### Pure Pursuit + PID
 
-![Pure Pursuit + PID](docs/media/pp-pid.gif)
+![Pure Pursuit + PID](docs/pp-pid.gif)
 
 ### PD + PID
 
-![PD + PID](docs/media/pd-pid.gif)
+![PD + PID](docs/pd-pid.gif)
 
 ## 目录结构
 
