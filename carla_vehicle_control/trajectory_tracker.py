@@ -43,11 +43,14 @@ from carla_vehicle_control.controllers.lat_pd import LatPD
 from carla_vehicle_control.controllers.lon_pid import LonPID
 from carla_vehicle_control.controllers.lat_pp import LatPP
 from carla_vehicle_control.controllers.lat_st import LatST
+from carla_vehicle_control.controllers.lat_mpc import LatMPC
+
 
 LAT_MAP = {
     "lat_pd": (LatPD,  "lat_pd"),
     "lat_pp": (LatPP,  "lat_purepursuit"),
     "lat_st": (LatST, "lat_stanley"),
+    "lat_mpc": (LatMPC, "lat_mpc"),
 }
 LON_MAP = {
     "lon_pid": (LonPID, "lon_pid"),
