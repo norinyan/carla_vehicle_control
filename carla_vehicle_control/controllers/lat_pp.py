@@ -36,7 +36,7 @@ class LatPP(LateralController):
         # 3. 计算alpha
         dy = ty - y
         dx = tx - x
-        alpha = atan2(dy, dx) - yaw 
+        alpha = -(atan2(dy, dx) - yaw) 
         alpha = atan2(sin(alpha), cos(alpha))   # 归一化[-pi, pi]
 
 
