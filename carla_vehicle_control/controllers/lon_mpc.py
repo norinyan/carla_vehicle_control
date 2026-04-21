@@ -2,7 +2,7 @@
  
 import cvxpy as cp
 import numpy as np
-from math import cos, sin, atan2, radians
+from math import cos, sin
 from .base_controller import LongitudinalController
 
 class LonMPC(LongitudinalController):
@@ -15,7 +15,14 @@ class LonMPC(LongitudinalController):
 
         q_es    = params.get("q_es", 1.0)
         q_ev    = params.get("q_ev", 2.0)
-
+        self.Q      = np.diag([q_es, q_ev])
+        self.P      = np.diag([q_es * 2.0, q_ev * 2.0])
+        self.R_a    = params.get("R_a",    0.1)
+        self.R_da   = params.get("R_da",   0.5)
+        self.a_min  = params.get("a_min", -3.0)
+        self.a_max  = params.get("a_max",  1.5)
+        self.da_max = params.get("da_max", 1.0)
+        self.da_min = -self.da_max
 
         self.a_prev = 0.0
         
@@ -83,7 +90,7 @@ class LonMPC(LongitudinalController):
         A = np.array([[1.0, dt ],
                       [0.0, 1.0]])
         B = np.array([[0.0],
-                      [dt ]])
+                      [-dt ]])
         return A, B
 
     def _setup_mpc(self):

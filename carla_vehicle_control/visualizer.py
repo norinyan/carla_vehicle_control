@@ -7,11 +7,14 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import csv
+from datetime import datetime
+from pathlib import Path
 
 
 class Visualizer(Node):
 
-    def __init__(self, ref_path_x, ref_path_y):
+    def __init__(self, ref_path_x, ref_path_y, route):
         super().__init__("visualizer")
 
         sensor_qos = QoSProfile(
@@ -30,9 +33,9 @@ class Visualizer(Node):
         # 参考路径（给小地图用）
         self.ref_path_x = ref_path_x
         self.ref_path_y = ref_path_y
+        self.route = route
 
-        # 数据缓冲，最多保留 300 帧（30s @ 10Hz）
-        self.max_len = 300
+        # 数据缓冲：按需求保留全部帧
         self.t         = []
         self.speed_now = []
         self.speed_ref = []
@@ -44,6 +47,29 @@ class Visualizer(Node):
 
         self.frame = 0
         self.latest = None
+
+        # 记录到 data/*.csv
+        data_dir = Path("/home/nor/ros2_carla_ws/src/carla_vehicle_control/data")
+        data_dir.mkdir(parents=True, exist_ok=True)
+
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.csv_path = data_dir / f"visualizer_route_{self.route}_{ts}.csv"
+        self.csv_fp = self.csv_path.open("w", newline="", encoding="utf-8")
+        self.csv_writer = csv.writer(self.csv_fp)
+        self.csv_writer.writerow([
+            "t",
+            "speed_now",
+            "speed_ref",
+            "yaw_now",
+            "yaw_ref",
+            "yaw_err_deg",
+            "steer",
+            "accel",
+            "traj_x",
+            "traj_y",
+        ])
+        self.csv_fp.flush()
+        self.get_logger().info(f"recording csv -> {self.csv_path}")
 
     def _on_data(self, msg):
 
@@ -65,12 +91,24 @@ class Visualizer(Node):
         self.traj_x.append(d[6])
         self.traj_y.append(d[7])
 
-        # 限制缓冲长度
-        for lst in [self.t, self.speed_now, self.speed_ref,
-                    self.yaw_err, self.steer, self.accel,
-                    self.traj_x, self.traj_y]:
-            if len(lst) > self.max_len:
-                lst.pop(0)
+        self.csv_writer.writerow([
+            t,
+            d[0],
+            d[1],
+            d[2],
+            d[3],
+            self.yaw_err[-1],
+            d[4],
+            d[5],
+            d[6],
+            d[7],
+        ])
+        self.csv_fp.flush()
+
+    def close_recorder(self):
+        if hasattr(self, "csv_fp") and self.csv_fp and not self.csv_fp.closed:
+            self.csv_fp.flush()
+            self.csv_fp.close()
 
 
 
@@ -106,7 +144,7 @@ def main(args=None):
     rclpy.init(args=args)
 
     # 读参考路径（给小地图画底图用）
-    import os, csv
+    import os
     from ament_index_python.packages import get_package_share_directory
 
     # 从参数或环境变量读 route，默认 A
@@ -125,7 +163,7 @@ def main(args=None):
             ref_x.append(float(row["x"]))
             ref_y.append(float(row["y"]))
 
-    node = Visualizer(ref_x, ref_y)
+    node = Visualizer(ref_x, ref_y, route)
 
     fig, ax_speed, ax_yaw, ax_steer, ax_accel, ax_map = build_figure()
 
@@ -200,6 +238,7 @@ def main(args=None):
     ani = animation.FuncAnimation(fig, update, interval=100, cache_frame_data=False)
     plt.show()
 
+    node.close_recorder()
     node.destroy_node()
     rclpy.shutdown()
 

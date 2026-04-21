@@ -81,7 +81,7 @@ class LatMPC(LateralController):
         return e_y, e_yaw
 
     def _solve_mpc(self, e_y, e_yaw):
-        print(f"[MPC] e_y={e_y:.3f}, e_yaw={e_yaw:.3f}, delta_prev={self.delta_prev:.3f}")
+       
         # 更新初始状态和模型矩阵
         A, B = self._build_model()
         self.x0_param.value         = np.array([e_y, e_yaw])
@@ -98,19 +98,6 @@ class LatMPC(LateralController):
             return self.delta_prev
 
         delta_opt = float(self.u_var.value[0, 0])
-
-        # 打印当前误差和求解结果
-        print(f"[MPC] e_y={e_y:.3f}  e_yaw={e_yaw:.3f}  delta_prev={self.delta_prev:.3f}  delta_opt={delta_opt:.3f}")
-        
-        # 打印预测时域控制序列（前5步）
-        u_seq  = self.u_var.value[0, :5].round(3)
-        print(f"[MPC] u_seq  (前5步): {u_seq}")
-
-        # 打印预测时域状态序列（前5步）
-        ey_seq   = self.x_var[0, :6].value.round(3)
-        eyaw_seq = self.x_var[1, :6].value.round(3)
-        print(f"[MPC] e_y预测 (前5步): {ey_seq}")
-        print(f"[MPC] eyaw预测(前5步): {eyaw_seq}")
 
         # 取第一步最优前轮转角
         return delta_opt
