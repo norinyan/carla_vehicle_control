@@ -9,7 +9,7 @@ trajectory_tracker:
   lat_ctrl: "lat_lqr"
 
   # 纵向控制器选择
-  lon_ctrl: "lon_pid"
+  lon_ctrl: "lon_mpc"
 
 # 横向pd控制器
 lat_pd:
@@ -71,4 +71,12 @@ lon_pid:
   a_limit: 1.5
   i_limit: 1.0
 
-  
+lon_mpc:
+  N: 20
+  q_es: 0.6
+  q_ev: 1.0
+  R_a: 0.05
+  R_da: 0.5
+  a_min: -3.0
+  a_max:  1.5
+  da_max: 1.0
