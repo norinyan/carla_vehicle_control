@@ -52,6 +52,7 @@ LAT_MAP = {
     "lat_pp": (LatPP,  "lat_purepursuit"),
     "lat_st": (LatST, "lat_stanley"),
     "lat_mpc": (LatMPC, "lat_mpc"),
+    "lat_lqr": (LatLQR, "lat_lqr"),
 }
 LON_MAP = {
     "lon_pid": (LonPID, "lon_pid"),
