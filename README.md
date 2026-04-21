@@ -1,222 +1,190 @@
 # carla_vehicle_control
 
-基于 CARLA + ROS 2 的轨迹跟踪。
+基于 CARLA + ROS 2 的轨迹跟踪控制，支持多种横向控制器的快速切换与对比测试。
 
-项目目标：给定一条离线参考轨迹，控制 `ego_vehicle` 在 `Town04` 里稳定跑完，并且方便切换横向控制器、做录像、看调参结果。
+给定一条离线参考轨迹，控制 `ego_vehicle` 在 `Town04` 里稳定跑完。  
+输入是 `route_X.csv`，输出是 CARLA 的油门、刹车、转向命令。
 
-输入是 `route_X.csv`，输出就是 CARLA 的油门、刹车、转向命令。
+---
 
-## 当前实现到哪一步
+## 当前实现
 
-- 地图固定在 `Town04`
-- 车辆固定为 `vehicle.lincoln.mkz_2020`
+- 地图固定在 `Town04`，车辆为 `vehicle.lincoln.mkz_2020`
 - 参考轨迹支持 `A / B / C` 三条路线
-- 横向控制器支持 `PD / Pure Pursuit / Stanley`
-- 纵向控制器目前是 `PID`
-- 油门控制不是简单线性映射，而是走二维标定表
-- 控制节点带有 `WAITING -> DRIVING -> STOPPING -> STOPPED` 状态机
-- 有一个 matplotlib 可视化窗口，用来看速度、航向误差、控制输出和实际轨迹
+- 横向控制器：`PD` / `Pure Pursuit` / `Stanley` / `LQR` / `MPC`
+- 纵向控制器：`PID`（输出目标加速度，走二维标定表映射油门）
+- 控制节点带 `WAITING → DRIVING → STOPPING → STOPPED` 状态机
+- 实时 matplotlib 可视化：速度、航向误差、控制输出、轨迹图
+
+---
 
 ## 演示
 
 ### Stanley + PID
-
-![Stanley + PID](docs/st-pid.gif)
+![Stanley + PID](results/pic/st-pid.png)
 
 ### Pure Pursuit + PID
-
-![Pure Pursuit + PID](docs/pp-pid.gif)
+![Pure Pursuit + PID](results/pic/pp-pid.png)
 
 ### PD + PID
+![PD + PID](results/pic/pd-pid.png)
 
-![PD + PID](docs/pd-pid.gif)
+### LQR + PID
+![LQR + PID](results/pic/lqr-pid.png)
 
-## 目录结构
+### MPC + PID
+![MPC + PID](results/pic/mpc-pid.png)
 
-```text
-carla_vehicle_control/
-├── carla_vehicle_control/
-│   ├── controllers/
-│   │   ├── base_controller.py
-│   │   ├── lat_pd.py
-│   │   ├── lat_pp.py
-│   │   ├── lat_st.py
-│   │   └── lon_pid.py
-│   ├── scenarios/
-│   │   ├── scene_manager.py
-│   │   └── trajectory_generator.py
-│   ├── utils/
-│   │   └── calibration.py
-│   ├── trajectory_tracker.py
-│   └── visualizer.py
-├── config/
-│   ├── controller_params.yaml
-│   ├── vehicle_params.yaml
-│   ├── ego_vehicle.json
-│   ├── route_A.csv
-│   ├── route_B.csv
-│   ├── route_C.csv
-│   └── calibration_table.csv
-├── docs/
-│   ├── logs.md
-│   ├── visualization_design.md
-│   └── media/
-├── launch/
-│   ├── run_control.launch.py
-│   └── spawn_scene.launch.py
-└── test/
-```
+---
+
+## 控制器对比
+
+路线 C（环形多弯道），纵向统一用 PID，横向控制器对比如下：
+
+| 横向控制器 | 完成用时 (s) | 速度 RMSE (m/s) | 最大偏航误差 (°) | 平均偏航误差 (°) | 转向平滑度 (avg \|Δsteer\|) |
+|:----------:|:------------:|:---------------:|:----------------:|:----------------:|:----------------------------:|
+| LQR        | 32.5         | 0.507           | 12.08            | 2.08             | 0.0306                       |
+| MPC        | 32.4         | 0.499           | 10.73            | **1.91**         | 0.0196                       |
+| PD         | 33.2         | **0.491**       | 21.67            | 2.36             | 0.0377                       |
+| Pure Pursuit | 31.8       | 0.508           | 12.56            | 2.33             | **0.0082**                   |
+| Stanley    | **31.5**     | 0.506           | 12.86            | 2.58             | 0.0096                       |
+
+> 速度 RMSE 越小越好；最大/平均偏航误差越小越好；转向平滑度越小说明方向盘抖动越少。
+
+交互式可视化（Speed / Yaw Error / Steer / Accel / Trajectory 五图合一）：👉 [`results/controller_benchmark.html`](results/controller_benchmark.html)
+
+---
 
 ## 环境
 
-- Ubuntu 20.04
-- ROS 2 Foxy
-- CARLA 0.9.13
-- `carla_ros_bridge`
-- `carla_spawn_objects`
-- Python 依赖：`PyYAML`、`numpy`、`matplotlib`
+- Ubuntu 20.04 / ROS 2 Foxy / CARLA 0.9.13
+- `carla_ros_bridge`、`carla_spawn_objects`
+- Python：`PyYAML`、`numpy`、`matplotlib`
 
-如果你重新生成轨迹，还需要 CARLA PythonAPI 里的 `GlobalRoutePlanner` 依赖环境可用。
+`.bashrc` 相关配置：
+
+```bash
+source /opt/ros/foxy/setup.bash
+source ~/ros2_carla_ws/install/setup.bash
+export CARLA_ROOT=~/carla
+export PYTHONPATH=$PYTHONPATH:$CARLA_ROOT/PythonAPI/carla/dist/carla-0.9.13-py3.7-linux-x86_64.egg:$CARLA_ROOT/PythonAPI/carla
+
+# 别名
+alias launch_scene='ros2 launch carla_vehicle_control spawn_scene.launch.py'
+alias start_carla='bash ~/.tmux-carla.sh'
+
+carla() {
+    cd ~/carla || return
+    ./CarlaUE4.sh
+}
+```
+
+---
 
 ## 快速开始
 
 先编译：
 
 ```bash
-cd ~/ros_ws
+cd ~/ros2_carla_ws
 colcon build --packages-select carla_vehicle_control
 source install/setup.bash
 ```
 
-### 1. 启动 CARLA
+在 `config/controller_params.yaml` 里选好横向控制器，然后分别开几个终端：
+
+**终端 1 — 启动 CARLA**
 
 ```bash
 carla
 ```
 
-如果当前不是 `Town04`，先切过去。
-
-### 2. 启动 ros bridge 并生成 ego 车
+**终端 2 — 生成场景和 ego 车**
 
 ```bash
-ros2 launch carla_vehicle_control spawn_scene.launch.py route:=A
+launch_scene route:=C   # A / B / C
 ```
 
-`route` 可选 `A`、`B`、`C`。
-
-### 3. 启动控制节点
+**终端 3 — 启动控制节点**
 
 ```bash
-ros2 run carla_vehicle_control trajectory_tracker --ros-args -p route:=A
+ros2 run carla_vehicle_control trajectory_tracker --ros-args -p route:=C
 ```
 
-### 4. 启动可视化
+**终端 4 — 启动可视化**
 
 ```bash
-ros2 run carla_vehicle_control visualizer route:=A
+ros2 run carla_vehicle_control visualizer route:=C
 ```
 
-### 5. 发送启动信号
+**终端 5 — 发送启动信号**
 
 ```bash
 ros2 topic pub --once /carla_viz/start std_msgs/Bool "data: true"
 ```
 
-如果要切路线，`spawn_scene`、`trajectory_tracker`、`visualizer` 三边的 `route` 要保持一致。
+> 注意：`spawn_scene`、`trajectory_tracker`、`visualizer` 三边的 `route` 要保持一致。
+
+录屏：`Ctrl+Shift+Alt+R`，如果默认 30 秒不够用，先执行：
+
+```bash
+gsettings set org.gnome.settings-daemon.plugins.media-keys max-screencast-length 600
+```
+
+---
 
 ## 控制器切换
 
-控制器选择在 [`config/controller_params.yaml`](config/controller_params.yaml) 里。
+编辑 [`config/controller_params.yaml`](config/controller_params.yaml)：
 
 ```yaml
 trajectory_tracker:
-  lat_ctrl: "lat_pd"   # lat_pd / lat_pp / lat_st
+  lat_ctrl: "lat_st"   # lat_pd / lat_pp / lat_st / lat_lqr / lat_mpc
   lon_ctrl: "lon_pid"
 ```
 
-当前支持：
-
-- `lat_pd`：横向 PD，额外叠加航向误差和简单曲率前馈
-- `lat_pp`：Pure Pursuit，自适应前视距离
-- `lat_st`：Stanley，基于前轴误差
-- `lon_pid`：纵向 PID，输出目标加速度
+---
 
 ## 三条路线
 
 | 路线 | 点数 | 长度 | 用途 |
-| --- | ---: | ---: | --- |
-| A | 355 | 179.15 m | 纯直道，适合看纵向控制 baseline |
-| B | 297 | 146.27 m | 直道 + 弯道，横纵向综合测试 |
-| C | 434 | 226.14 m | 环形多弯道，横向压力测试 |
+|:----:|-----:|-----:|:-----|
+| A    | 355  | 179.15 m | 纯直道，纵向 baseline |
+| B    | 297  | 146.27 m | 直道 + 弯道，横纵综合 |
+| C    | 434  | 226.14 m | 环形多弯道，横向压力测试 |
 
-轨迹 CSV 字段统一为：
+轨迹 CSV 字段：`s, x, y, yaw, kappa, speed`
 
-```text
-s, x, y, yaw, kappa, speed
-```
-
-其中：
-
-- `s`：累计弧长
-- `x, y`：参考位置
-- `yaw`：参考航向角
-- `kappa`：曲率
-- `speed`：参考速度
-
-## 控制主流程
-
-`trajectory_tracker.py`：
-
-1. 读取 `controller_params.yaml`，实例化横纵向控制器
-2. 读取 `route_X.csv`
-3. 订阅 `/carla/ego_vehicle/odometry_ego`
-4. 在当前参考点附近做最近点搜索，并取前方 `N` 个参考点
-5. 横向控制器输出 `steer`
-6. 纵向控制器输出目标加速度 `a_cmd`
-7. 用 `calibration_table.csv` 把 `a_cmd + 当前车速` 映射成油门
-8. 负加速度区间按比例映射为刹车
-9. 到终点附近进入停车状态机，完成减速和驻车
+---
 
 ## 纵向标定
 
-当前纵向控制不是“PID 输出直接当油门”。
+纵向不是"PID 输出直接当油门"，而是先做了二维标定表：
 
-项目里先做了一张二维标定表：
+- 行：油门开度，列：速度区间，表值：该条件下平均加速度
 
-- 行：油门开度
-- 列：速度区间
-- 表值：该油门、该速度下的平均加速度
+运行时逻辑：`lon_pid` 算出目标加速度 → `_interp_2d()` 查表反查油门 → 叠加速度相关前馈补偿。
 
-标定表文件是 [`config/calibration_table.csv`](config/calibration_table.csv)。
+标定表：[`config/calibration_table.csv`](config/calibration_table.csv)
 
-运行时逻辑是：
+---
 
-1. `lon_pid` 先算出目标加速度
-2. `_interp_2d()` 根据当前车速，在标定表里反查对应油门
-3. 再加一个和速度相关的小前馈补偿
+## 目录结构
 
-这么做的原因很简单：同一个油门在不同速度下的加速度不一样，单一线性映射不够用。
-
-## 可视化
-
-当前版本的可视化节点会订阅 `/carla_viz/control_state`，显示：
-
-- 实际速度和参考速度
-- 航向误差
-- 转向输出
-- 纵向输出
-- 参考轨迹和实际轨迹
-
-这部分是为了录屏和调参，不是正式 HMI。
-
-## 轨迹生成
-
-参考轨迹由 [`carla_vehicle_control/scenarios/trajectory_generator.py`](carla_vehicle_control/scenarios/trajectory_generator.py) 生成。
-
-生成过程里做了几件事：
-
-- 用 `GlobalRoutePlanner` 沿道路网络规划
-- 按 bridge 坐标系转换 `y` 和 `yaw`
-- 计算 `s` 和 `kappa`
-- 弯道提前降速
-- 终点做渐停速度规划
+```text
+carla_vehicle_control/
+├── carla_vehicle_control/
+│   ├── controllers/         # 各控制器实现
+│   ├── scenarios/           # 场景管理 & 轨迹生成
+│   ├── utils/               # 标定工具
+│   ├── trajectory_tracker.py
+│   └── visualizer.py
+├── config/                  # 参数、路线、标定表
+├── results/
+│   ├── controller_benchmark.html   # 交互式对比图
+│   ├── data/                # 各控制器原始 CSV
+│   ├── pic/                 # 截图
+│   └── video/               # 录制视频
+├── launch/
+└── test/
+```
