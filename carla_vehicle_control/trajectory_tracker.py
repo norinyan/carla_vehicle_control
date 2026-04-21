@@ -43,6 +43,7 @@ from carla_vehicle_control.controllers.lat_pd import LatPD
 from carla_vehicle_control.controllers.lon_pid import LonPID
 from carla_vehicle_control.controllers.lat_pp import LatPP
 from carla_vehicle_control.controllers.lat_st import LatST
+from carla_vehicle_control.controllers.lat_lqr import LatLQR
 from carla_vehicle_control.controllers.lat_mpc import LatMPC
 
 
