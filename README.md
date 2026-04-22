@@ -7,6 +7,12 @@
 
 ---
 
+## 交互式可视化
+
+![Controller Benchmark](results/benchmark.gif)
+
+--- 
+
 ## 当前实现
 
 - 地图固定在 `Town04`，车辆为 `vehicle.lincoln.mkz_2020`
@@ -50,8 +56,6 @@
 | Stanley    | **31.5**     | 0.506           | 12.86            | 2.58             | 0.0096                       |
 
 > 速度 RMSE 越小越好；最大/平均偏航误差越小越好；转向平滑度越小说明方向盘抖动越少。
-
-交互式可视化： ![Controller Benchmark](results/benchmark.gif)
 
 ---
 
