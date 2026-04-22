@@ -51,7 +51,7 @@
 
 > 速度 RMSE 越小越好；最大/平均偏航误差越小越好；转向平滑度越小说明方向盘抖动越少。
 
-交互式可视化（Speed / Yaw Error / Steer / Accel / Trajectory 五图合一）：👉 [`results/controller_benchmark.html`](results/controller_benchmark.html)
+交互式可视化： ![Controller Benchmark](results/benchmark.gif)
 
 ---
 
